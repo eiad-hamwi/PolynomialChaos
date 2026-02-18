@@ -5,6 +5,7 @@ Manifest.toml
 *.lcov
 
 # Test artifacts
+benchmark/
 test/artifacts/
 *.png
 

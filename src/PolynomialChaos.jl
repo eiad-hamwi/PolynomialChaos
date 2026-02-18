@@ -7,6 +7,9 @@ module PolynomialChaos
 using GTPSA
 using LinearAlgebra
 
+# Extension method when SciBmad is loaded
+function propagate_twiss_table end
+
 include("distributions.jl")
 include("moments.jl")
 include("twiss.jl")
@@ -28,6 +31,7 @@ export AbstractDistribution,
        twiss_to_sigma,
        sigma_to_twiss,
        propagate_sigma,
-       propagate_twiss
+       propagate_twiss,
+       propagate_twiss_table
 
 end

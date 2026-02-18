@@ -88,6 +88,23 @@ bi_out = propagate_twiss(map_out, bi; desc = D)
 bi_back = propagate_twiss(map_out, bi_out; backward = true, desc = D)
 ```
 
+### Twiss table along a beamline (SciBmad)
+
+With `SciBmad` and `TypedTables` in your environment (e.g. `--project=~/.julia/env/lean`), `propagate_twiss_table` propagates optical lattice parameters from `BeamInit` through a `Beamline` into a table similar to SciBmad's `twiss` output:
+
+```julia
+using PolynomialChaos, SciBmad
+
+bl = Beamline([Quadrupole(Kn1=0.36, L=0.5), Drift(L=1.0), ...], species_ref=Species("electron"), E_ref=18e9)
+bi = BeamInit(x0=0.0, px0=0.0, y0=0.0, py0=0.0, δ0=0.0, σδ=1e-4,
+              εx=1e-6, βx=10.0, αx=0.0, ηx=0.0, ηpx=0.0,
+              εy=1e-6, βy=10.0, αy=0.0)
+
+t = propagate_twiss_table(bl, bi)
+# t is a TypedTable with: beamline_index, name, s, beta_1, alpha_1, eta_1, etap_1, beta_2, alpha_2, orbit_*
+# Faster on long lattices: propagate_twiss_table(bl, bi; desc=GTPSA.Descriptor(6,1), linear=true)
+```
+
 ## API overview
 
 | Area | Signatures |
@@ -96,10 +113,11 @@ bi_back = propagate_twiss(map_out, bi_out; backward = true, desc = D)
 | **Raw moment** | `raw_moment(d, n) -> E[X^n]` |
 | **Moments** | `expectation(t, dists)`, `cross_expectation(t1, t2, dists)`, `variance(t, dists)`, `std(t, dists)`, `covariance(ts, dists)` |
 | **Beam** | `BeamInit(...)`, `twiss_to_sigma(bi)`, `sigma_to_twiss(μ, Σ)` |
-| **Propagation** | `propagate_sigma(map_out, bi; desc)`, `propagate_twiss(map_out, bi; backward, desc)` |
+| **Propagation** | `propagate_sigma(map_out, bi; desc)`, `propagate_twiss(map_out, bi; backward, desc)`, `propagate_twiss_table(bl, bi; desc, at)` |
 
 - **`propagate_sigma`** -> `(mean, cov, composed)`.
 - **`propagate_twiss`** -> `BeamInit`.
+- **`propagate_twiss_table`** -> `Table` (requires SciBmad + TypedTables). Propagates Twiss along a beamline; columns include `s`, `beta_1`, `alpha_1`, `eta_1`, `etap_1`, `beta_2`, `alpha_2`, `orbit_*`. Use `linear=true, desc=Descriptor(6,1)` for sub-ms performance on long lattices.
 
 ## Q&A
 
@@ -129,6 +147,12 @@ A: `(mean, cov, composed)`.
 
 Q: How do I propagate backward?  
 A: Call `propagate_twiss(map_out, bi; backward=true, desc=Descriptor(6, 2))`.
+
+Q: How do I get a Twiss table along a beamline like SciBmad's `twiss`?  
+A: With SciBmad and TypedTables loaded, use `propagate_twiss_table(bl, bi; desc=Descriptor(6, 2), at=:)`. Use `at=elements` to restrict output to specific line elements.
+
+Q: How do I get sub-millisecond performance on long lattices?  
+A: Use `linear=true` with `desc=Descriptor(6, 1)`. This uses matrix propagation (J*μ+c, J*Σ*J') and matches the full PCE path for linear optics. For nonlinear effects, use `linear=false` with `desc=Descriptor(6, 2)`.
 
 Q: How do I check drift beta-waist behavior quickly?  
 A: Use a drift map `x -> x + s*px` and verify `beta(s) = beta* + s^2/beta*`.
