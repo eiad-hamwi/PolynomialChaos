@@ -1,0 +1,14 @@
+# Julia
+Manifest.toml
+*.ji
+*.cov
+*.lcov
+
+# Test artifacts
+test/artifacts/
+*.png
+
+# IDE / OS
+.DS_Store
+*.swp
+*.swo
